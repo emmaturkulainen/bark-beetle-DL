@@ -21,6 +21,10 @@ Install rest of the requirements with
 
 # Dataset
 
+Download the [Dataset](https://drive.google.com/file/d/1zzKB3auHGvp3Nx_3BWEKw-HJzI5S7GfE/view?usp=drive_link) and extract it in the project directory.
+
+# Custom data
+
 Organize the data accordingly:
 ```
 ├── data
