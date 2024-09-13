@@ -97,20 +97,20 @@ def filter_ints(string):
             ints = [int(i) for i in filter(lambda s: s.isdigit(), string)]
             return int("".join(map(str, ints)))
     
-
 # convert images to correct format (float32) and resize images to square shapes
 def rescale(datadir, filename, img_size):
     dataset = rasterio.open(os.path.join(datadir, filename))
     im = dataset.read([1,2,3]) # some images have extra channel in addition to RGB-channels. Only read RGB
+    # Handle nodata values if they exist
+    nodata = dataset.nodata
+    if nodata is not None:
+        # Set nodata values to a value that fits within the float32 range
+        im = np.where(im == nodata, 0, im)
+
+    # Normalize the image data to float32 range
+    im = np.interp(im, (im.min(), im.max()), (0, 1)).astype(np.float32)
+    
     im = np.transpose(im, axes=[1, 2, 0])
-    if im.dtype == "uint8":
-        im = im/255.
-        im = im.astype(np.float32)
-    elif im.dtype == "uint16":
-        im = im/65535.
-        im = im.astype(np.float32)
-    im = np.where(im > 1, 1, im)
-    im = np.where(im < 0, 0, im)
     im_resized = cv2.resize(im, (img_size, img_size))
     return im_resized
 
@@ -118,15 +118,16 @@ def rescale(datadir, filename, img_size):
 def rescale_msi(datadir, filename, img_size):
     dataset = rasterio.open(os.path.join(datadir, filename))
     im = dataset.read([1,2,3,4,5]) # remove thermal band
+    # Handle nodata values if they exist
+    nodata = dataset.nodata
+    if nodata is not None:
+        # Set nodata values to a value that fits within the float32 range
+        im = np.where(im == nodata, 0, im)
+
+    # Normalize the image data to float32 range
+    im = np.interp(im, (im.min(), im.max()), (0, 1)).astype(np.float32)
+    
     im = np.transpose(im, axes=[1, 2, 0])
-    if im.dtype == "uint8":
-        im = im/255.
-        im = im.astype(np.float32)
-    elif im.dtype == "uint16":
-        im = im/65535.
-        im = im.astype(np.float32)
-    im = np.where(im > 1, 1, im)
-    im = np.where(im < 0, 0, im)
     im_resized = cv2.resize(im, (img_size, img_size))
     return im_resized
     
@@ -134,15 +135,16 @@ def rescale_msi(datadir, filename, img_size):
 def rescale_hsi(datadir, filename, img_size):
     dataset = rasterio.open(os.path.join(datadir, filename))
     im = dataset.read()
+    # Handle nodata values if they exist
+    nodata = dataset.nodata
+    if nodata is not None:
+        # Set nodata values to a value that fits within the float32 range
+        im = np.where(im == nodata, 0, im)
+
+    # Normalize the image data to float32 range
+    im = np.interp(im, (im.min(), im.max()), (0, 1)).astype(np.float32)
+    
     im = np.transpose(im, axes=[1, 2, 0])
-    if im.dtype == "uint8":
-        im = im/255.
-        im = im.astype(np.float32)
-    elif im.dtype == "uint16":
-        im = im/65535.
-        im = im.astype(np.float32)
-    im = np.where(im > 1, 1, im)
-    im = np.where(im < 0, 0, im)
     im_resized = cv2.resize(im, (img_size, img_size))
     return im_resized
 
