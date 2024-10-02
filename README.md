@@ -38,6 +38,8 @@ Organize the data accordingly:
 
 Input images are to be named such that the image name includes a string containing the id of the image. E.g. 'id10', 'id12', etc. Image names can contain other information as well, as long the id is included. The corresponding class labels for the images are stored in .csv files with columns 'tree_id' and 'class'. 
 
+Modify data.yaml to have the correct classes.
+
 # Running the models
 
 You can use the script ```run_model.py``` to perform training and testing of the models. To run the script with default arguments, use command
