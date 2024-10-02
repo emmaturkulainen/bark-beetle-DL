@@ -19,7 +19,7 @@ from torch import reshape
 
 # Kirsi's 2D-CNN
 class CNN2D(nn.Module):
-    def __init__(self, in_channels, params={"dropout": 0.5}, classes=4):
+    def __init__(self, in_channels, num_classes=4, params={"dropout": 0.5}):
         super().__init__()
         self.layer1 = nn.Sequential(
             nn.Conv2d(in_channels, 32, kernel_size=(3,3), stride=(1, 1), padding='same'),
@@ -39,7 +39,7 @@ class CNN2D(nn.Module):
             nn.Linear(6*6*64, 64),
             nn.ReLU(),
             nn.Dropout(params["dropout"]),
-            nn.Linear(64, classes))
+            nn.Linear(64, num_classes))
  
     def forward(self, x):
         out = self.layer1(x)
@@ -52,7 +52,7 @@ class CNN2D(nn.Module):
 
 # Kirsi's 3D-CNN 
 class CNN1_3D(nn.Module):
-    def __init__(self, in_channels, params={"dropout":0.5}, classes=4):
+    def __init__(self, in_channels, num_classes, params={"dropout":0.5}):
         super().__init__()
         self.in_channels = in_channels
         self.layer1 = nn.Sequential(
@@ -73,7 +73,7 @@ class CNN1_3D(nn.Module):
             nn.Linear(6*6*6*64, 64), 
             nn.ReLU(),
             nn.Dropout(params["dropout"]),
-            nn.Linear(64, classes))
+            nn.Linear(64, num_classes))
  
     def forward(self, x):
         x = torch.unsqueeze(x, 1)
@@ -85,7 +85,7 @@ class CNN1_3D(nn.Module):
 
 '''Nezami et al., 2020, https://doi.org/10.3390/rs12071070'''
 class CNN2_3D(nn.Module):
-    def __init__(self, in_channels, params={"dropout":0.5}, classes=4):
+    def __init__(self, in_channels, num_classes, params={"dropout":0.5}):
         super().__init__()
         self.layer1 = nn.Sequential(
             nn.Conv3d(1, 20, kernel_size=(5,5,5), stride=1, padding=0),
@@ -100,7 +100,7 @@ class CNN2_3D(nn.Module):
 
         self.layer2 = nn.Sequential(
             nn.Linear(3*3*3*3, 128),
-            nn.Linear(128, classes)
+            nn.Linear(128, num_classes)
         )
 
     def forward(self, x):
@@ -112,7 +112,7 @@ class CNN2_3D(nn.Module):
 
 '''Pi et al., 2021, https://doi.org/10.1016/j.ecoinf.2021.101278'''
 class CNN3_3D(nn.Module):
-    def __init__(self, in_channels, params={"dropout":0.5}, classes=4):
+    def __init__(self, in_channels, num_classes, params={"dropout":0.5}):
         super().__init__()
         self.layer1 = nn.Sequential(
             nn.Conv3d(1, 5, kernel_size=3, stride=1, padding=0),
@@ -127,7 +127,7 @@ class CNN3_3D(nn.Module):
 
         self.layer2 = nn.Sequential(
             nn.Linear(15*44*44*13, 1024),
-            nn.Linear(1024,classes)
+            nn.Linear(1024, num_classes)
             #nn.Softmax()
         )
  
@@ -142,7 +142,7 @@ class CNN3_3D(nn.Module):
 
 '''Zhang et al., 2020, https://doi.org/10.1016/j.rse.2020.111938'''
 class CNN4_3D(nn.Module):
-    def __init__(self, in_channels, params={"dropout":0.5}, classes=4):
+    def __init__(self, in_channels, num_classes, params={"dropout":0.5}):
         super().__init__()
         self.layer1 = nn.Sequential(
             nn.Conv3d(1, 4, kernel_size=(3,3,7), stride=1, padding='same'),
@@ -164,7 +164,7 @@ class CNN4_3D(nn.Module):
             nn.Dropout(params["dropout"]), 
             nn.Linear(64*50*50*23, 64),
             nn.Dropout(params["dropout"]),
-            nn.Linear(64, classes)
+            nn.Linear(64, num_classes)
         )
  
     def forward(self, x):
@@ -176,7 +176,7 @@ class CNN4_3D(nn.Module):
 
 '''Yu et al, 2020, https://doi.org/10.1109/JSTARS.2020.2983224'''
 class CNN1_2D3D(nn.Module):
-    def __init__(self, in_channels, params={"dropout":0.5}, classes=4):
+    def __init__(self, in_channels, num_classes, params={"dropout":0.5}):
         super().__init__()
 
         self.layer1 = nn.Sequential(
@@ -194,7 +194,7 @@ class CNN1_2D3D(nn.Module):
 
         self.layer4 = nn.Sequential( 
             nn.Linear(16*16*200, 250),
-            nn.Linear(250,classes)
+            nn.Linear(250, num_classes)
         )
  
     def forward(self, x):
@@ -209,7 +209,7 @@ class CNN1_2D3D(nn.Module):
 
 '''Ge et al., 2020, https://doi.org/10.1109/JSTARS.2020.3024841'''
 class CNN2_2D3D(nn.Module):
-    def __init__(self, in_channels, params={"dropout":0.5}, classes=4):
+    def __init__(self, in_channels, num_classes, params={"dropout":0.5}):
         super().__init__()
 
         self.branch1_layer1 = nn.Sequential(
@@ -240,7 +240,7 @@ class CNN2_2D3D(nn.Module):
             nn.Linear(42*42*64*3, 64),
             nn.Linear(64, 32),
             nn.Linear(32, 16), 
-            nn.Linear(16, classes)
+            nn.Linear(16, num_classes)
         )
 
 
@@ -264,9 +264,9 @@ class CNN2_2D3D(nn.Module):
 
 
 class Hyper3DNet(nn.Module):
-    def __init__(self, in_channels, params={"dropout":0.5}, classes=4): 
+    def __init__(self, in_channels, num_classes, params={"dropout":0.5}): 
         super().__init__()
-        self.classes = classes  
+        self.classes = num_classes  
 
         self.feature_extractor1 = nn.Sequential(
             nn.Conv3d(1, out_channels=8, kernel_size=(3,3,5), padding='same'),
@@ -306,7 +306,7 @@ class Hyper3DNet(nn.Module):
                 nn.Linear(50*50*16, 256),
                 nn.ReLU(),
                 nn.Dropout(params["dropout"]),
-                nn.Linear(256, classes))
+                nn.Linear(256, num_classes))
      
     def forward(self, x):
         #print("x", x.size())

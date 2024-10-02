@@ -36,11 +36,21 @@ def clock():
 def create_exp_dir(args):
     # user defined experiment name
     if args.exp:
+        exp_number = 1
         exp = args.exp
-        result_path = os.path.join(args.optimizer_output_dir, exp)
-        if not os.path.exists(result_path):
-            os.mkdir(result_path)
-        return result_path
+        while True:
+            # Construct the new directory name
+            result_path = os.path.join(args.optimizer_output_dir, exp)
+            try:
+                # Attempt to create the directory
+                os.mkdir(result_path)
+                print(f"Created directory: {result_path}")
+                return result_path
+            except FileExistsError:
+                # If the directory already exists, increment the number and try again
+                exp = args.exp + str(exp_number)
+                exp_number+=1
+
     # default experiment name (exp1, exp2, ...)
     else:
         exp_number = 1
@@ -61,12 +71,15 @@ def objective(trial, result_path):
     args = get_args()
     print(args)
 
-    seed = args.seed
+    seed = int(args.seed)
     datatype = args.datatype
     model_str = args.model
     weights = args.weights
 
     datadir = args.datadir
+    with open('data.yaml', 'r') as file:
+        content = yaml.safe_load(file)
+        num_classes = content.get('nc')
 
     # use GPU if available
     if torch.cuda.is_available():
@@ -100,14 +113,14 @@ def objective(trial, result_path):
     if model_str == 'vgg':
         model = models.vgg16_bn()
         model.features[0] = nn.Conv2d(in_channels, 64, kernel_size=(3,3), stride=(1, 1), padding=(1, 1))
-        model.classifier[6] = torch.nn.Linear(4096, 4) # for vgg
+        model.classifier[6] = torch.nn.Linear(4096, num_classes) # for vgg
 
     elif model_str == 'vit':
         img_size = 224
-        model = timm.create_model('vit_small_patch16_224', num_classes=4, pretrained=False, in_chans=in_channels) 
+        model = timm.create_model('vit_small_patch16_224', num_classes=num_classes, pretrained=False, in_chans=in_channels) 
 
     else: 
-        model = eval(model_str)(in_channels=in_channels)
+        model = eval(model_str)(in_channels=in_channels, num_classes=num_classes)
     
     model.to(device)
 
@@ -117,15 +130,18 @@ def objective(trial, result_path):
     test_img_dir = os.path.join(datadir, "test")
     test_label_dir = os.path.join(datadir, "test_labels.csv")
 
+    val_img_dir = os.path.join(datadir, "val")
+    val_label_dir = os.path.join(datadir, "val_labels.csv")
+
     if weights:
         # Load model
         model.load_state_dict(torch.load(weights))
     else:
         print("Training model from scratch.")
 
-    epochs = args.epochs
+    epochs = int(args.epochs)
 
-    train_dataset, test_dataset, val_dataset = create_datasets(train_img_dir, train_label_dir, test_img_dir, test_label_dir, img_size, mode=datatype)
+    train_dataset, test_dataset, val_dataset = create_datasets(train_img_dir, train_label_dir, test_img_dir, test_label_dir, val_img_dir, val_label_dir, img_size, mode=datatype)
 
     # Number of input channels
     in_channels = train_dataset[0][0].shape[0]
@@ -137,15 +153,15 @@ def objective(trial, result_path):
         model = nn.DataParallel(model)
 
     params = {
-            'learning_rate': trial.suggest_float('learning_rate', 1e-7, 1e-3, log=True),
-            'train_batch_size': trial.suggest_int('train_batch_size', 4, 64, step=4),
+            'learning_rate': trial.suggest_float('learning_rate', 1e-7, 1e-4, log=True),
+            'train_batch_size': trial.suggest_int('train_batch_size', 12, 64, step=4),
             'weight_decay': trial.suggest_float('weight_decay', 1e-3, 1e-1, log=True),
             }
 
     dataloaders = load_data(train_dataset, val_dataset, params['train_batch_size'])
     # Number of trainable parameters
     #print(sum(p.numel() for p in model.parameters() if p.requires_grad))
-    model, loss_hist, val_loss, optim_wts, best_model_loss_wts, best_model_acc_wts = train_model(params, model, device, dataloaders, epochs)
+    model, loss_hist, val_loss, optim_wts, best_model_loss_wts, best_model_acc_wts = train_model(params, model, device, dataloaders, epochs, num_classes)
     
     # Use multiple GPU's if available
     if torch.cuda.device_count() > 1:
@@ -153,7 +169,7 @@ def objective(trial, result_path):
         model = nn.DataParallel(model)
     
     test_dl = DataLoader(test_dataset, batch_size=4)
-    oa, precision, recall, f1 = test_model(model, device, test_dl)
+    oa, precision, recall, f1 = test_model(model, device, test_dl, num_classes)
     #score = np.mean(f1) # optimize mean f1 score between classes
     epoch, score = val_loss[-1]
     
@@ -172,7 +188,6 @@ def objective(trial, result_path):
     
     with open('data.yaml', 'r') as file:
         content = yaml.safe_load(file)
-        nc = content.get('nc')
         classes = content.get('names')
 
     results_dict = {}

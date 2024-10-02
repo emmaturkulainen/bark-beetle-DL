@@ -32,7 +32,7 @@ import optuna
 
 
 # Training, validation and test datasets
-def create_datasets(img_dir, data_dir, test_img_dir, test_data_dir, img_size, data_augmentation=True, mode='rgb'):
+def create_datasets(img_dir, data_dir, test_img_dir, test_data_dir, val_img_dir, val_data_dir, img_size, data_augmentation=True, mode='rgb'):
 
     if data_augmentation:
         transformations = {
@@ -59,17 +59,17 @@ def create_datasets(img_dir, data_dir, test_img_dir, test_data_dir, img_size, da
 
     if mode == 'rgb':
         train_dataset = CombinationDataset(img_dir, None, None, data_dir, channels=3, img_size=img_size, transform=transformations['train'])
-        val_dataset = CombinationDataset(img_dir, None, None, data_dir,  channels=3, img_size=img_size, transform=transformations['val'])
+        val_dataset = CombinationDataset(val_img_dir, None, None, val_data_dir,  channels=3, img_size=img_size, transform=transformations['val'])
         test_dataset = CombinationDataset(test_img_dir, None, None, test_data_dir, channels=3, img_size=img_size, transform=transformations['val'])
 
     elif mode == 'hsi':
         train_dataset = CombinationDataset(None, img_dir, None, data_dir, channels=46, img_size=img_size, transform=transformations['train'])
-        val_dataset = CombinationDataset(None, img_dir, None, data_dir, channels=46, img_size=img_size, transform=transformations['val'])
+        val_dataset = CombinationDataset(None, val_img_dir, None, val_data_dir, channels=46, img_size=img_size, transform=transformations['val'])
         test_dataset = CombinationDataset(None, test_img_dir, None, test_data_dir, channels=46, img_size=img_size, transform=transformations['val'])
 
     elif mode == 'msi':
         train_dataset = CombinationDataset(None, None, img_dir, data_dir, channels=5, img_size=img_size, transform=transformations['train'])
-        val_dataset = CombinationDataset(None, None, img_dir, data_dir, channels=5, img_size=img_size, transform=transformations['val'])
+        val_dataset = CombinationDataset(None, None, val_img_dir, val_data_dir, channels=5, img_size=img_size, transform=transformations['val'])
         test_dataset = CombinationDataset(None, None, test_img_dir, test_data_dir, channels=5, img_size=img_size, transform=transformations['val'])
 
     
@@ -83,23 +83,23 @@ def load_data(train_dataset, val_dataset, train_batch_size, pin_memory=True, num
 
     val_batch_size = 4
     # split the data for training and validation
-    valid_size = 0.2
-    num_train = len(train_dataset)
-    indices = list(range(num_train))
-    split = int(np.floor(valid_size * num_train))
+    #valid_size = 0.2
+    #num_train = len(train_dataset)
+    #indices = list(range(num_train))
+    #split = int(np.floor(valid_size * num_train))
 
-    np.random.shuffle(indices) # shuffle indices for random train-val split
-    train_idx, val_idx = indices[split:], indices[:split] # indices for train and val
+    #np.random.shuffle(indices) # shuffle indices for random train-val split
+    #train_idx, val_idx = indices[split:], indices[:split] # indices for train and val
 
     # PyTorch Sampler for training and validation
-    train_sampler = SubsetRandomSampler(train_idx)
-    val_sampler = SubsetRandomSampler(val_idx)
+    #train_sampler = SubsetRandomSampler(train_idx)
+    #val_sampler = SubsetRandomSampler(val_idx)
 
     # PyTorchDataloader for training and validation
-    train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=train_batch_size,
+    train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size,
                                 num_workers=num_workers, pin_memory=pin_memory)
 
-    val_dataloader = DataLoader(val_dataset, sampler=val_sampler, batch_size=val_batch_size,
+    val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size,
                                     num_workers=num_workers, pin_memory=pin_memory)
 
     # Dataloaders dict for training-validation-loop
@@ -108,7 +108,7 @@ def load_data(train_dataset, val_dataset, train_batch_size, pin_memory=True, num
     return dataloaders
 
 # Train and evaluate the accuracy of neural network model
-def train_model(param, model, device, dataloaders, num_epochs, trial=None):
+def train_model(param, model, device, dataloaders, num_epochs, num_classes, trial=None):
     
     since = time.time()
     
@@ -181,7 +181,7 @@ def train_model(param, model, device, dataloaders, num_epochs, trial=None):
                 print(f"\nTraining loss = {loss_history[-1]}")
 	
             if phase == 'val':
-                oa, precision, recall, f1 = val_model(model, device, dataloaders[phase])
+                oa, precision, recall, f1 = val_model(model, device, dataloaders[phase], num_classes)
                 epoch_acc = oa
                 if trial != None:
                     trial.report(epoch_loss, epoch)
@@ -207,7 +207,7 @@ def train_model(param, model, device, dataloaders, num_epochs, trial=None):
     return model, loss_history, val_losses, optim_wts, best_model_loss_wts, best_model_acc_wts
 
 
-def val_model(model, device, val_dl):
+def val_model(model, device, val_dl, num_classes):
     model.eval()
     correct = 0
     total = 0
@@ -230,15 +230,15 @@ def val_model(model, device, val_dl):
 
     predictions, ground_truths = np.vstack(predictions), np.vstack(ground_truths)
     oa = correct / total # overall accuracy
-    precision = precision_score(ground_truths, predictions, average=None, labels=[0,1,2,3], zero_division = 0)
-    recall = recall_score(ground_truths, predictions, average=None, labels = [0,1,2,3], zero_division = 0)
+    precision = precision_score(ground_truths, predictions, average=None, labels=list(range(num_classes)), zero_division = 0)
+    recall = recall_score(ground_truths, predictions, average=None, labels =list(range(num_classes)), zero_division = 0)
     f1 = np.divide(2*np.multiply(precision, recall), precision+recall+1)
 
     return oa, precision, recall, f1   
 
 
 # This function computes the accuracy on the test dataset
-def test_model(model, device, test_dl):
+def test_model(model, device, test_dl, num_classes):
     model.eval()
     correct = 0
     total = 0
@@ -260,8 +260,8 @@ def test_model(model, device, test_dl):
 
     predictions, ground_truths = np.vstack(predictions), np.vstack(ground_truths)
     oa = correct / total # overall accuracy
-    precision = precision_score(ground_truths, predictions, average=None, labels=[0,1,2,3])
-    recall = recall_score(ground_truths, predictions, average=None, labels = [0,1,2,3])
+    precision = precision_score(ground_truths, predictions, average=None, labels=list(range(num_classes)))
+    recall = recall_score(ground_truths, predictions, average=None, labels =list(range(num_classes)))
     f1 = np.divide(2*np.multiply(precision, recall), precision+recall)
 
 
