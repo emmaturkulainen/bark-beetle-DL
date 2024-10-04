@@ -218,7 +218,7 @@ def main():
         print(f"F1-score for {name} trees is {best_loss_f1[i]:.3f}")
         print()  # For better readability
 
-
+    model.load_state_dict(best_model_loss_wts)
     results_dict = {}
 
     results_dict['overall accuracy'] = best_loss_oa
