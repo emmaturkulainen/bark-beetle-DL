@@ -161,7 +161,7 @@ def objective(trial, result_path):
     dataloaders = load_data(train_dataset, val_dataset, params['train_batch_size'])
     # Number of trainable parameters
     #print(sum(p.numel() for p in model.parameters() if p.requires_grad))
-    model, loss_hist, val_loss, optim_wts, best_model_loss_wts, best_model_acc_wts = train_model(params, model, device, dataloaders, epochs, num_classes)
+    model, loss_hist, val_loss, optim_wts, best_model_loss_wts, best_model_acc_wts = train_model(params, model, device, dataloaders, epochs, num_classes, trial=trial)
     
     # Use multiple GPU's if available
     if torch.cuda.device_count() > 1:
