@@ -97,10 +97,10 @@ def load_data(train_dataset, val_dataset, train_batch_size, pin_memory=True, num
 
     # PyTorchDataloader for training and validation
     train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size,
-                                num_workers=num_workers, pin_memory=pin_memory)
+                                num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
 
     val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size,
-                                    num_workers=num_workers, pin_memory=pin_memory)
+                                    num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
 
     # Dataloaders dict for training-validation-loop
     dataloaders = {'train': train_dataloader, 'val': val_dataloader}
@@ -190,6 +190,7 @@ def train_model(param, model, device, dataloaders, num_epochs, num_classes, tria
                 if epoch_loss <= best_val_loss:
                     best_val_loss = epoch_loss
                     best_model_loss_wts = copy.deepcopy(model.state_dict())
+                    print(f"Best validation loss updated at epoch {epoch}, loss: {best_val_loss}")
                 if epoch_acc >= best_val_acc:
                     best_val_acc = epoch_acc
                     best_model_acc_wts = copy.deepcopy(model.state_dict())
