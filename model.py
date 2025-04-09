@@ -33,18 +33,18 @@ import optuna
 
 # Training, validation and test datasets
 def create_datasets(img_dir, data_dir, test_img_dir, test_data_dir, val_img_dir, val_data_dir, img_size, data_augmentation=True, mode='rgb'):
-
+    # very basic transforms, modify as needed
     if data_augmentation:
         transformations = {
             'train': transforms.Compose([
                 transforms.ToTensor(),
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomRotation((-180, 180)),
-                #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), #ImageNet
+                #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), #ImageNet (uncomment if using ImageNet pretrained model)
                 ]),
             'val': transforms.Compose([
                 transforms.ToTensor(),
-                #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), #ImageNet 
+                #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), #ImageNet (uncomment if using ImageNet pretrained model)
                 ])
                 }
     else:
