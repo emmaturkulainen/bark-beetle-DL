@@ -50,14 +50,14 @@ class CNN2D(nn.Module):
 
 
 
-# Kirsi's 3D-CNN 
+# Kirsi's 3D-CNN (Batch normalization commented out beacuse it degarded perfomance for my dataset, can try both with and without BN)
 class CNN1_3D(nn.Module):
     def __init__(self, in_channels, num_classes, params={"dropout":0.5}):
         super().__init__()
         self.in_channels = in_channels
         self.layer1 = nn.Sequential(
             nn.Conv3d(1, 32, kernel_size=(3,3,3), stride=1, padding='same'),
-            #nn.BatchNorm3d(32),
+            #nn.BatchNorm3d(32)
             nn.ReLU(inplace=True),
             nn.MaxPool3d((2, 2, 2)),
             nn.Conv3d(32, 64, kernel_size=(3,3,3), stride=1, padding='same'),

@@ -93,7 +93,7 @@ def main():
     torch.backends.cudnn.benchmark = False   # benchmark mode is good whenever your input sizes for the network do not vary. If input size varies, it may negatively effect the runtime performance.
 
     torch.backends.cudnn.deterministic = True # only uses deterministic convolution algorithms
-
+    # These can be changed to the correct values for the dataset
     if datatype == 'rgb':
         in_channels = 3
         img_size = 150

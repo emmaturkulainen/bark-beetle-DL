@@ -97,6 +97,8 @@ def objective(trial, result_path):
 
     torch.backends.cudnn.deterministic = True # only uses deterministic convolution algorithms
 
+
+    # These can be changed to the correct values for the dataset
     if datatype == 'rgb':
         in_channels = 3
         img_size = 150
@@ -153,7 +155,7 @@ def objective(trial, result_path):
         model = nn.DataParallel(model)
 
     params = {
-            'learning_rate': trial.suggest_float('learning_rate', 1e-7, 1e-4, log=True),
+            'learning_rate': trial.suggest_float('learning_rate', 1e-7, 1e-3, log=True),
             'train_batch_size': trial.suggest_int('train_batch_size', 12, 64, step=4),
             'weight_decay': trial.suggest_float('weight_decay', 1e-3, 1e-1, log=True),
             }
@@ -171,7 +173,7 @@ def objective(trial, result_path):
     test_dl = DataLoader(test_dataset, batch_size=4)
     oa, precision, recall, f1 = test_model(model, device, test_dl, num_classes)
     #score = np.mean(f1) # optimize mean f1 score between classes
-    epoch, score = val_loss[-1]
+    epoch, score = val_loss[-1] # optimize validation loss
     
     plt.figure()
     plt.title('Loss')
